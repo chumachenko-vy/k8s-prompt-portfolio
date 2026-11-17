@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: app-job
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: init
+        image: busybox
+        command:
+        - /bin/sh
+        - -c
+        - echo "sample data" > /data/input/sample.txt
+        volumeMounts:
+        - name: data-input
+          mountPath: /data/input
+      containers:
+      - name: processor
+        image: busybox
+        command:
+        - /bin/sh
+        - -c
+        - ls -l /data/input
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - echo 'Start from the postStart handler' > /data/input/message
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - echo 'Stop from the preStop handler' > /data/output/message
+        volumeMounts:
+        - name: data-input
+          mountPath: /data/input
+        - name: data-output
+          mountPath: /data/output
+      volumes:
+      - name: data-input
+        emptyDir: {}
+      - name: data-output
+        emptyDir: {}
